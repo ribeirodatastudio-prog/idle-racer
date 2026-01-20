@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import { type Team, initializeSeason, type Driver } from '../engine/grid';
 import { type Track, generateTrack } from '../engine/track';
 import { calculateQualifyingPace, simulateLap, type LapAnalysis } from '../engine/race';
@@ -28,6 +28,7 @@ interface GameContextType {
   setGameState: (state: GameState) => void;
 
   grid: Team[];
+  driverMap: Map<string, Driver>;
   playerTeamId: string | null;
   getPlayerTeam: () => Team | null;
 
@@ -77,7 +78,6 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   // State
   const [gameState, setGameState] = useState<GameState>('START');
   const [grid, setGrid] = useState<Team[]>([]);
-  const [driverMap, setDriverMap] = useState<Map<string, Driver>>(new Map());
   const [playerTeamId, setPlayerTeamId] = useState<string | null>(null);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [points, setPoints] = useState(0);
@@ -129,14 +129,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   }, [gameState, grid, playerTeamId, currentTrack, points, raceNumber, raceData, standings]);
 
   // DERIVED STATE: Keep a map of drivers for efficient lookups
-  useEffect(() => {
+  const driverMap = useMemo(() => {
     const newMap = new Map<string, Driver>();
     grid.forEach(team => {
       team.drivers.forEach(driver => {
         newMap.set(driver.id, driver);
       });
     });
-    setDriverMap(newMap);
+    return newMap;
   }, [grid]);
 
   const getPlayerTeam = () => grid.find(t => t.id === playerTeamId) || null;
@@ -452,7 +452,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <GameContext.Provider value={{
-      gameState, setGameState, grid, playerTeamId, getPlayerTeam, currentTrack,
+      gameState, setGameState, grid, driverMap, playerTeamId, getPlayerTeam, currentTrack,
       economy: { points },
       season: { raceNumber, totalRaces: 40, standings },
       raceData,

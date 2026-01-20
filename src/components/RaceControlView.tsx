@@ -7,7 +7,7 @@ interface Props {
 }
 
 export const RaceControlView = ({ onSelectDriver, selectedDriverId }: Props) => {
-  const { raceData, grid, currentTrack, actions } = useGame();
+  const { raceData, driverMap, currentTrack, actions } = useGame();
 
   const isFinished = raceData.isRaceFinished;
 
@@ -53,7 +53,7 @@ export const RaceControlView = ({ onSelectDriver, selectedDriverId }: Props) => 
              </thead>
              <tbody>
                {raceData.results.map((res) => {
-                   const driver = grid.flatMap(t => t.drivers).find(d => d.id === res.driverId);
+                   const driver = driverMap.get(res.driverId);
                    const isSelected = selectedDriverId === res.driverId;
                    return (
                      <tr
