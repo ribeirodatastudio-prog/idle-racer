@@ -1,5 +1,9 @@
+"use client";
+
 import React from "react";
-import { LayoutDashboard, Users, Crosshair, Settings, Bell, Menu, Trophy, Activity } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, Crosshair, Settings, Bell, Menu, Trophy, Activity, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ShellProps {
@@ -7,15 +11,18 @@ interface ShellProps {
 }
 
 const NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Roster", icon: Users, active: false },
-  { label: "Training", icon: Crosshair, active: false },
-  { label: "Tactics", icon: Activity, active: false },
-  { label: "Tournaments", icon: Trophy, active: false },
-  { label: "Settings", icon: Settings, active: false },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/" },
+  { label: "Roster", icon: Users },
+  { label: "Training", icon: Crosshair },
+  { label: "Tactics", icon: Activity },
+  { label: "Tournaments", icon: Trophy },
+  { label: "Practice", icon: Swords, href: "/practice" },
+  { label: "Settings", icon: Settings },
 ];
 
 export function Shell({ children }: ShellProps) {
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen flex bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
@@ -27,20 +34,34 @@ export function Shell({ children }: ShellProps) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium uppercase tracking-wide transition-colors border-l-2",
-                item.active
-                  ? "border-primary text-primary bg-primary/5"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.href ? pathname === item.href : false;
+            const buttonClass = cn(
+              "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium uppercase tracking-wide transition-colors border-l-2",
+              isActive
+                ? "border-primary text-primary bg-primary/5"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
+            );
+
+            return item.href ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={buttonClass}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                className={buttonClass}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-border bg-black/20">
