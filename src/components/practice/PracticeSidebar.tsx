@@ -7,7 +7,7 @@ interface PracticeSidebarProps {
   teamCT: Player[];
   selectedPlayerId: string | null;
   onSelectPlayer: (id: string | null) => void;
-  overrides: Record<string, Partial<Player["skills"]["mental"] & Player["skills"]["technical"] & Player["skills"]["physical"]>>;
+  overrides: Record<string, any>;
   onUpdateOverride: (playerId: string, stat: string, value: number) => void;
   tacticT: Tactic;
   tacticCT: Tactic;

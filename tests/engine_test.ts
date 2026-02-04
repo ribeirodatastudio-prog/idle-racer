@@ -31,7 +31,7 @@ const p1 = MOCK_PLAYERS[0]; // Zywoo
 const p2 = MOCK_PLAYERS[1]; // Karrigan (Lower skill)
 const bot1 = new Bot(p1, "T", "mid");
 const bot2 = new Bot(p2, "CT", "mid");
-const zone = map.getZone("mid")!;
+// DuelEngine doesn't use zone for cover in calculation anymore in this version, but that's fine.
 
 // Run 100 duels, Zywoo should win most
 let wins1 = 0;
