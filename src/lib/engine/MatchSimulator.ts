@@ -1,10 +1,10 @@
 import { Bot, BotAIState } from "./Bot";
 import { GameMap } from "./GameMap";
 import { TacticsManager, TeamSide, Tactic } from "./TacticsManager";
-import { DuelEngine, DuelResult } from "./DuelEngine";
+import { DuelEngine } from "./DuelEngine";
 import { Player } from "@/types";
 import { DUST2_MAP } from "./maps/dust2";
-import { MatchState, MatchPhase, RoundEndReason, RoundHistory, BuyStrategy } from "./types";
+import { MatchState, MatchPhase, RoundEndReason, BuyStrategy } from "./types";
 import { EconomySystem } from "./EconomySystem";
 import { BuyLogic } from "./BuyLogic";
 import { ECONOMY } from "./constants";
@@ -99,7 +99,7 @@ export class MatchSimulator {
     });
 
     // Start in Freeze Time
-    this.startRound(true);
+    this.startRound();
     this.broadcast();
   }
 
@@ -163,11 +163,11 @@ export class MatchSimulator {
         }
     });
 
-    this.startRound(true);
+    this.startRound();
     this.broadcast();
   }
 
-  private startRound(isMatchStart: boolean = false) {
+  private startRound() {
     // Reset Map Objects
     this.bomb.reset();
     this.roundTimer = this.ROUND_TIME;
@@ -450,7 +450,7 @@ export class MatchSimulator {
         const currentZone = this.map.getZone(attacker.currentZoneId);
         if (!currentZone) return;
 
-        let potentialTargets: { bot: Bot; distance: number; isCrossZone: boolean }[] = [];
+        const potentialTargets: { bot: Bot; distance: number; isCrossZone: boolean }[] = [];
 
         // Same Zone Targets (Distance ~ 100)
         const sameZoneEnemies = (zoneOccupants[attacker.currentZoneId] || [])

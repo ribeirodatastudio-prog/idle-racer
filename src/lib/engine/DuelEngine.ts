@@ -1,7 +1,6 @@
 import { Bot } from "./Bot";
 import { TechnicalSkills, MentalSkills, PhysicalSkills } from "@/types";
-import { WeaponManager } from "./WeaponManager";
-import { determineHitGroup, calculateDamage, HitGroup } from "./DamageUtils";
+import { determineHitGroup, calculateDamage } from "./DamageUtils";
 
 export interface DuelResult {
   winnerId: string;
@@ -172,8 +171,6 @@ export class DuelEngine {
     }
 
     // 2. Cross-Zone Non-Scoped Penalty
-    // Check if scoped weapon
-    const isScoped = weapon.name.toLowerCase().includes("(scoped)") || weapon.name.includes("AWP") || weapon.name.includes("SSG 08") || weapon.name.includes("G3SG1") || weapon.name.includes("SCAR-20") || weapon.name.includes("AUG") || weapon.name.includes("SG 553");
     // Actually, weapons.json has separate entries for "(scoped)". If the bot has "AWP", they are not scoped unless the weapon name is "AWP (scoped)".
     // So simple string check for "(scoped)" covers the state where they are using the scope.
     // However, AWP without scope is inaccurate at range anyway.

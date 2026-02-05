@@ -1,9 +1,8 @@
-
 import React from "react";
-import { MatchState, RoundEndReason } from "@/lib/engine/types";
+import { MatchState } from "@/lib/engine/types";
 import { Bot } from "@/lib/engine/Bot";
 import { PlayerStats } from "@/lib/engine/MatchSimulator";
-import { Trophy, Skull, Timer, Zap, ArrowRight, Shield, Crosshair } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 interface RoundResultOverlayProps {
     matchState: MatchState;
