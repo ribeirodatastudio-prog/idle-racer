@@ -283,7 +283,7 @@ export class Bot {
     // --- CT LOGIC ---
     if (this.side === TeamSide.CT) {
       // 1. Check Bomb Status
-      if (bomb.status === BombStatus.PLANTED && bomb.timer < 14 && !bomb.defuserId) {
+      if (bomb.status === BombStatus.PLANTED && bomb.timer < 50 && !bomb.defuserId) {
          desiredState = BotAIState.SAVING;
          desiredGoal = Pathfinder.findFurthestZone(map, bomb.plantSite || this.currentZoneId);
       }
@@ -398,8 +398,21 @@ export class Bot {
           }
       }
       else if (bomb.status === BombStatus.PLANTED) {
-          desiredState = BotAIState.DEFAULT;
-          desiredGoal = bomb.plantSite || this.currentZoneId;
+          desiredState = BotAIState.HOLDING_ANGLE;
+          if (bomb.plantSite) {
+              const plantZone = map.getZone(bomb.plantSite);
+              if (plantZone && plantZone.connections.length > 0) {
+                  // Post-Plant Perimeter: Spread to adjacent zones
+                  // Use bot ID hash to deterministically pick a neighbor
+                  const idHash = this.id.charCodeAt(this.id.length - 1);
+                  const neighborIndex = idHash % plantZone.connections.length;
+                  desiredGoal = plantZone.connections[neighborIndex];
+              } else {
+                  desiredGoal = bomb.plantSite;
+              }
+          } else {
+              desiredGoal = this.currentZoneId;
+          }
       }
       else {
           desiredState = BotAIState.DEFAULT;

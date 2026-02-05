@@ -60,7 +60,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
                       <div className="w-full h-1 bg-zinc-800">
                           <div className="h-full bg-red-600 transition-all duration-300" style={{ width: `${explodePct}%` }} />
                       </div>
-                      <div className="text-[10px] text-red-500 font-mono mt-0.5">{(bombState.timer / 2).toFixed(1)}s</div>
+                      <div className="text-[10px] text-red-500 font-mono mt-0.5">{(bombState.timer / 10).toFixed(1)}s</div>
                   </div>
               );
           case BombStatus.DEFUSING:

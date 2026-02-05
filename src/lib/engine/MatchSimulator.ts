@@ -428,31 +428,63 @@ export class MatchSimulator {
                const totalInTarget = (zoneOccupancy[targetId]?.T || 0) + (zoneOccupancy[targetId]?.CT || 0);
 
                if (totalInTarget >= 4) {
-                   // Zone Crowded - Reroute (Delay)
-                   const zone = this.map.getZone(targetId);
-                   if (zone) {
-                       // Find a neighbor of the TARGET that is ALSO connected to CURRENT zone (valid move)
-                       // Or just find a neighbor of CURRENT zone?
-                       // User said "spill over into adjacent support positions". Support positions are usually adjacent to the target site.
-                       // But we must be able to walk there.
-                       // Try to find a neighbor of Target that is accessible from Current.
-                       const validNeighbor = zone.connections.find(n => {
-                           const count = (zoneOccupancy[n]?.T || 0) + (zoneOccupancy[n]?.CT || 0);
-                           const dist = this.map.getDistance(bot.currentZoneId, n);
-                           return count < 4 && dist !== Infinity;
-                       });
+                   let canEnter = false;
 
-                       if (validNeighbor) {
-                           this.events.unshift(`[Tick ${this.tickCount}] 🚧 ${bot.player.name} rerouting from crowded ${zone.name} to ${this.map.getZone(validNeighbor)?.name}`);
-                           bot.targetZoneId = validNeighbor;
-                           bot.movementProgress = 0; // Reset progress (Walking to neighbor)
-                           return;
+                   if (bot.hasBomb) {
+                       canEnter = true;
+                       // Displace Teammate Logic
+                       const teammatesInZone = this.bots.filter(b => b.currentZoneId === targetId && b.side === bot.side && b.status === "ALIVE" && b.id !== bot.id);
+                       if (teammatesInZone.length > 0) {
+                           // Find lowest clutching skill
+                           const toDisplace = teammatesInZone.reduce((prev, curr) =>
+                               (curr.player.skills.technical.clutching < prev.player.skills.technical.clutching) ? curr : prev
+                           );
+
+                           // Reroute them
+                           const zone = this.map.getZone(targetId);
+                           if (zone) {
+                               // Find any valid neighbor to push them to
+                               const validNeighbor = zone.connections.find(n => {
+                                   const count = (zoneOccupancy[n]?.T || 0) + (zoneOccupancy[n]?.CT || 0);
+                                   return count < 4;
+                               });
+
+                               if (validNeighbor) {
+                                   toDisplace.targetZoneId = validNeighbor;
+                                   toDisplace.movementProgress = 0;
+                                   this.events.unshift(`[Tick ${this.tickCount}] 🚨 BOMB CARRIER PRIORITY! ${toDisplace.player.name} displaced by ${bot.player.name}.`);
+                               }
+                           }
                        }
                    }
-                   // If no accessible neighbor found, stay put (wait at border)
-                   // We clamp progress to just before arrival to simulate "blocked"
-                   bot.movementProgress = Math.min(bot.movementProgress, distance - 0.1);
-                   return;
+
+                   if (!canEnter) {
+                       // Zone Crowded - Reroute (Delay)
+                       const zone = this.map.getZone(targetId);
+                       if (zone) {
+                           // Find a neighbor of the TARGET that is ALSO connected to CURRENT zone (valid move)
+                           // Or just find a neighbor of CURRENT zone?
+                           // User said "spill over into adjacent support positions". Support positions are usually adjacent to the target site.
+                           // But we must be able to walk there.
+                           // Try to find a neighbor of Target that is accessible from Current.
+                           const validNeighbor = zone.connections.find(n => {
+                               const count = (zoneOccupancy[n]?.T || 0) + (zoneOccupancy[n]?.CT || 0);
+                               const dist = this.map.getDistance(bot.currentZoneId, n);
+                               return count < 4 && dist !== Infinity;
+                           });
+
+                           if (validNeighbor) {
+                               this.events.unshift(`[Tick ${this.tickCount}] 🚧 ${bot.player.name} rerouting from crowded ${zone.name} to ${this.map.getZone(validNeighbor)?.name}`);
+                               bot.targetZoneId = validNeighbor;
+                               bot.movementProgress = 0; // Reset progress (Walking to neighbor)
+                               return;
+                           }
+                       }
+                       // If no accessible neighbor found, stay put (wait at border)
+                       // We clamp progress to just before arrival to simulate "blocked"
+                       bot.movementProgress = Math.min(bot.movementProgress, distance - 0.1);
+                       return;
+                   }
                }
 
                // Capacity OK - Proceed to Enter
