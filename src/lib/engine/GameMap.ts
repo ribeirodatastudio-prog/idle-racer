@@ -46,8 +46,12 @@ export class GameMap {
 
     if (!z1 || !z2) return Infinity;
 
+    if (![z1.x, z1.y, z2.x, z2.y].every(Number.isFinite)) return Infinity;
+
     const dx = z1.x - z2.x;
     const dy = z1.y - z2.y;
-    return Math.sqrt(dx * dx + dy * dy);
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    return Number.isFinite(d) ? d : Infinity;
   }
 }

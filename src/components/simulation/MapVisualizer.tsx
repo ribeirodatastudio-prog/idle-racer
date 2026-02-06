@@ -105,8 +105,27 @@ export const MapVisualizer: React.FC<MapVisualizerProps> = ({ map, bots, zoneSta
 
       const offsetX = (index % 3) * 15 - 7.5;
       const offsetY = Math.floor(index / 3) * 15 - 7.5;
-      const startX = zone.x + offsetX;
-      const startY = zone.y + offsetY;
+
+      let baseX = zone.x;
+      let baseY = zone.y;
+
+      if (bot.targetZoneId) {
+        const to = map.getZone(bot.targetZoneId);
+        if (to) {
+          const dx = to.x - zone.x;
+          const dy = to.y - zone.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (Number.isFinite(dist) && dist > 0) {
+            const t = Math.max(0, Math.min(1, bot.movementProgress / dist));
+            baseX = zone.x + dx * t;
+            baseY = zone.y + dy * t;
+          }
+        }
+      }
+
+      const startX = baseX + offsetX;
+      const startY = baseY + offsetY;
 
       let targetX = startX;
       let targetY = startY;
@@ -195,12 +214,34 @@ export const MapVisualizer: React.FC<MapVisualizerProps> = ({ map, bots, zoneSta
         {bots.map((bot, index) => {
           if (bot.status === "DEAD") return null;
 
-          const zone = map.getZone(bot.currentZoneId);
-          if (!zone) return null;
+          const from = map.getZone(bot.currentZoneId);
+          if (!from) return null;
 
           // Offset based on index to reduce overlapping
           const offsetX = (index % 3) * 15 - 7.5;
           const offsetY = Math.floor(index / 3) * 15 - 7.5;
+
+          let baseX = from.x;
+          let baseY = from.y;
+
+          if (bot.targetZoneId) {
+            const to = map.getZone(bot.targetZoneId);
+            if (to) {
+              const dx = to.x - from.x;
+              const dy = to.y - from.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+
+              if (Number.isFinite(dist) && dist > 0) {
+                const t = Math.max(0, Math.min(1, bot.movementProgress / dist));
+                baseX = from.x + dx * t;
+                baseY = from.y + dy * t;
+              }
+            }
+          }
+
+          // apply your offset after interpolation
+          const x = baseX + offsetX;
+          const y = baseY + offsetY;
 
           const isSelected = bot.id === selectedBotId;
 
@@ -209,8 +250,8 @@ export const MapVisualizer: React.FC<MapVisualizerProps> = ({ map, bots, zoneSta
               {/* Highlight Circle if selected */}
               {isSelected && (
                  <circle
-                   cx={zone.x + offsetX}
-                   cy={zone.y + offsetY}
+                   cx={x}
+                   cy={y}
                    r={18}
                    className="fill-none stroke-white"
                    strokeWidth="3"
@@ -218,22 +259,22 @@ export const MapVisualizer: React.FC<MapVisualizerProps> = ({ map, bots, zoneSta
               )}
 
               <circle
-                cx={zone.x + offsetX}
-                cy={zone.y + offsetY}
+                cx={x}
+                cy={y}
                 r={10}
                 className={bot.side === "T" ? "fill-yellow-500" : "fill-blue-500"}
               />
               {/* HP Bar */}
               <rect
-                x={zone.x + offsetX - 10}
-                y={zone.y + offsetY - 15}
+                x={x - 10}
+                y={y - 15}
                 width={20}
                 height={4}
                 className="fill-red-900"
               />
               <rect
-                x={zone.x + offsetX - 10}
-                y={zone.y + offsetY - 15}
+                x={x - 10}
+                y={y - 15}
                 width={20 * (bot.hp / 100)}
                 height={4}
                 className="fill-green-500"
