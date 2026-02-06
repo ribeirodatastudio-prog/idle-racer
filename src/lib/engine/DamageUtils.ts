@@ -3,7 +3,7 @@ import { Weapon } from "@/types/Weapon";
 
 export type HitGroup = "HEAD" | "CHEST" | "STOMACH" | "LEGS";
 
-export function determineHitGroup(attacker: Bot, distance: number): HitGroup {
+export function determineHitGroup(attacker: Bot, distance: number, defenderCover: number = 0): HitGroup {
   const tech = attacker.player.skills.technical;
   const placement = tech.crosshairPlacement;
   const weapon = attacker.getEquippedWeapon();
@@ -25,6 +25,9 @@ export function determineHitGroup(attacker: Bot, distance: number): HitGroup {
     if (weapon && isPistol && !weapon.name.includes("Desert Eagle")) {
         headChance *= 0.7; // 30% reduction for pistols
     }
+
+    // Cover Penalty
+    headChance *= (1 - defenderCover * 0.6);
 
     const legChance = Math.max(0, 0.15 - (placement / 200) * 0.15); // 15% to 0%
 
@@ -48,6 +51,9 @@ export function determineHitGroup(attacker: Bot, distance: number): HitGroup {
   if (weapon && isPistolLong && !weapon.name.includes("Desert Eagle")) {
       headChance *= 0.7;
   }
+
+  // Cover Penalty
+  headChance *= (1 - defenderCover * 0.6);
 
   if (Math.random() < headChance) return "HEAD";
 

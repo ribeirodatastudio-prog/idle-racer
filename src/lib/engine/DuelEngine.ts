@@ -1,5 +1,6 @@
 import { Bot } from "./Bot";
 import { determineHitGroup, calculateDamage } from "./DamageUtils";
+import { EngagementContext } from "./engagement";
 
 export interface ParticipantResult {
   id: string;
@@ -47,9 +48,12 @@ export class DuelEngine {
    * Calculates the outcome of a duel between an initiator (Attacker) and a target (Defender).
    * Returns a structured exchange with results for both participants.
    */
-  public static calculateOutcome(initiator: Bot, target: Bot, distance: number, isCrossZone: boolean = false, targetCanFire: boolean = true): DuelResult {
+  public static calculateOutcome(initiator: Bot, target: Bot, distance: number, isCrossZone: boolean = false, targetCanFire: boolean = true, context?: EngagementContext): DuelResult {
     // Simulate Initiator
-    const initiatorResult = this.simulateEngagement(initiator, target, distance, true, isCrossZone);
+    const initiatorCover = context ? context.attackerCover : 0;
+    const targetCover = context ? context.defenderCover : 0;
+
+    const initiatorResult = this.simulateEngagement(initiator, target, distance, true, isCrossZone, context, targetCover);
     if (!isCrossZone) {
       initiatorResult.timeToKill *= 0.95; // 5% faster for initiator close range
     }
@@ -57,7 +61,7 @@ export class DuelEngine {
     // Simulate Target
     let targetResult: CombatSimulationResult;
     if (targetCanFire) {
-         targetResult = this.simulateEngagement(target, initiator, distance, false, isCrossZone);
+         targetResult = this.simulateEngagement(target, initiator, distance, false, isCrossZone, context, initiatorCover);
     } else {
          targetResult = {
              success: false,
@@ -133,7 +137,7 @@ export class DuelEngine {
     };
   }
 
-  private static simulateEngagement(shooter: Bot, target: Bot, distance: number, isInitiator: boolean, isCrossZone: boolean): CombatSimulationResult {
+  private static simulateEngagement(shooter: Bot, target: Bot, distance: number, isInitiator: boolean, isCrossZone: boolean, context?: EngagementContext, targetCover: number = 0): CombatSimulationResult {
     const log: string[] = [];
     const publicLog: string[] = [];
     const tech = shooter.player.skills.technical;
@@ -158,6 +162,18 @@ export class DuelEngine {
         log.push(`Entry Frag Penalty applied (-${(1 - this.ENTRY_FRAG_ACCURACY_PENALTY)*100}% Precision)`);
     }
 
+    // Engagement Context Modifiers (Accuracy)
+    if (context && isInitiator) {
+        if (context.peekType === "JIGGLE") {
+            precision *= 0.75;
+            log.push("Jiggle Peek: Accuracy reduced.");
+        } else if (context.peekType === "WIDE") {
+            precision *= 0.95;
+        } else if (context.peekType === "SWING") {
+            precision *= 0.85;
+        }
+    }
+
     // Stun Fix: Add delay instead of resetting reaction time
     const reaction = physical.reactionTime;
     const stunPenalty = shooter.stunTimer > 0 ? 150 : 0; // ms delay
@@ -167,11 +183,34 @@ export class DuelEngine {
 
     // Difficulty Fix: Clamp difficulty
     // Original: BASE - crosshair + targetPositioning
-    const rawDifficulty = this.BASE_DIFFICULTY - tech.crosshairPlacement + targetMental.positioning;
+    let rawDifficulty = this.BASE_DIFFICULTY - tech.crosshairPlacement + targetMental.positioning;
+
+    if (targetCover > 0) {
+        rawDifficulty += targetCover * 35;
+        log.push(`Target Cover (${(targetCover*100).toFixed(0)}%): Difficulty +${(targetCover*35).toFixed(0)}`);
+    }
+
     const difficulty = Math.max(20, Math.min(180, rawDifficulty));
 
     // Time Factor
     let timeToHit = this.BASE_TIME_TO_HIT - reaction + stunPenalty;
+
+    // Engagement Context Modifiers (Time)
+    if (context) {
+        if (isInitiator) {
+             if (context.defenderHolding && context.peekType !== "HOLD") {
+                 timeToHit += 40;
+                 log.push("Peeking into Holder: +40ms");
+             }
+             if (context.peekType === "JIGGLE") timeToHit -= 10;
+             if (context.peekType === "SWING") timeToHit -= 15;
+        } else {
+             if (context.defenderHolding && context.peekType !== "HOLD") {
+                 timeToHit -= 25;
+                 log.push("Holding Angle: -25ms");
+             }
+        }
+    }
 
     // Entry Frag Tempo Advantage
     if (shooter.isEntryFragger) {
@@ -208,7 +247,7 @@ export class DuelEngine {
     log.push(`Tap Prob: ${(successProb * 100).toFixed(1)}%`);
 
     if (Math.random() < successProb) {
-        const hitGroup = determineHitGroup(shooter, distance);
+        const hitGroup = determineHitGroup(shooter, distance, targetCover);
         const dmgResult = calculateDamage(weapon, hitGroup, target, distance);
 
         const hitMsg = `${shooter.player.name} hit ${target.player.name} in ${hitGroup} with ${weapon.name} for ${dmgResult.damage} damage.`;
@@ -245,7 +284,7 @@ export class DuelEngine {
         sprayProb = Math.max(0.01, Math.min(0.99, sprayProb));
 
         if (Math.random() < sprayProb) {
-            const hitGroup = determineHitGroup(shooter, distance);
+            const hitGroup = determineHitGroup(shooter, distance, targetCover);
             const dmgResult = calculateDamage(weapon, hitGroup, target, distance);
 
             const hitMsg = `${shooter.player.name} hit ${target.player.name} in ${hitGroup} with ${weapon.name} for ${dmgResult.damage} damage.`;
