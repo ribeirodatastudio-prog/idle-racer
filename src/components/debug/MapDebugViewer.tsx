@@ -26,7 +26,11 @@ export const MapDebugViewer: React.FC<MapDebugViewerProps> = ({ mapData }) => {
     mapImage.onload = () => {
       // 1. Draw Map Image
       // Stretch to fit the canvas, assuming the mesh bounds map to this area
+      ctx.save();
+      ctx.scale(1, -1);
+      ctx.translate(0, -canvas.height);
       ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
       // 2. Draw Navigation Mesh
       // Set styles for mesh

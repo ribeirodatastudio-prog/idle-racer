@@ -180,7 +180,12 @@ export const MapVisualizer: React.FC<MapVisualizerProps> = ({ map, bots, zoneSta
       <svg viewBox="0 0 1024 1024" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
 
         {/* Map Background */}
-        <image href="/dust2_2d.png" width="1024" height="1024" />
+        <image
+          href="/dust2_2d.png"
+          width="1024"
+          height="1024"
+          transform="scale(1, -1) translate(0, -1024)"
+        />
 
         {/* Nav Mesh Layer */}
         {navMeshNodes}

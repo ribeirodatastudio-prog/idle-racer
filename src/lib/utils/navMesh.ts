@@ -1,5 +1,5 @@
 import navMeshData from "@/data/de_dust2_web.json";
-import { DUST2_COORDINATES } from "./cs2Constants";
+import { DUST2_COORDINATES } from "@/lib/engine/cs2Constants";
 
 // Type definition for the Nav Mesh structure
 export interface NavMeshNode {
@@ -22,10 +22,6 @@ export const MESH_BOUNDS = {
   minY: DUST2_COORDINATES.NAV_MIN_Y,
   maxY: DUST2_COORDINATES.NAV_MAX_Y
 };
-
-// Target Screen/Canvas Dimensions (from Constants)
-const TARGET_WIDTH = DUST2_COORDINATES.VISUAL_WIDTH;
-const TARGET_HEIGHT = DUST2_COORDINATES.VISUAL_HEIGHT;
 
 /**
  * Transforms Source Engine Game Coordinates to Visual Coordinates (1024x1024).
