@@ -9,4 +9,5 @@ export interface EngagementContext {
   flashedAttacker: number;   // 0..1
   flashedDefender: number;   // 0..1
   smoked: boolean;           // blocks LOS
+  isExpected?: boolean;      // Defender expects the attack (Info War)
 }

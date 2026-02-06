@@ -850,6 +850,11 @@ export class MatchSimulator {
 
         if (isSmoked) continue; // Skip engagement
 
+        // Info War: Is the attack expected?
+        const defenderThreatLevel = chosen.bot.internalThreatMap[bot.currentZoneId]?.level || 0;
+        const noiseInAttackerZone = this.zoneStates[bot.currentZoneId]?.noiseLevel || 0;
+        const isExpected = defenderThreatLevel > 0 || noiseInAttackerZone > 30;
+
         engagements.push({
             attacker: bot,
             target: chosen.bot,
@@ -864,7 +869,8 @@ export class MatchSimulator {
                 defenderCover: targetZone?.cover || 0,
                 flashedAttacker: Math.min(1, bot.stunTimer / 20),
                 flashedDefender: Math.min(1, chosen.bot.stunTimer / 20),
-                smoked: isSmoked
+                smoked: isSmoked,
+                isExpected: isExpected
             }
         });
     }
