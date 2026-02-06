@@ -70,44 +70,52 @@ export const CS2_MOVEMENT_SPEEDS = {
   STOP_SPEED: 100, // Speed at which friction starts applying
 };
 
+// Define bounds constants to be used in DUST2_COORDINATES
+const NAV_MIN_X = -2200;
+const NAV_MAX_X = 1800;
+const NAV_MIN_Y = -1200;
+const NAV_MAX_Y = 3200;
+const VISUAL_WIDTH = 1024;
+const VISUAL_HEIGHT = 1024;
+
 /**
  * Map coordinates transformation
  * CS2 nav mesh uses different coordinate system than our visual map
  */
 export const DUST2_COORDINATES = {
   // Map bounds from nav mesh data
-  NAV_MIN_X: -2200,
-  NAV_MAX_X: 1700,
-  NAV_MIN_Y: -3700,
-  NAV_MAX_Y: 900,
+  NAV_MIN_X,
+  NAV_MAX_X,
+  NAV_MIN_Y,
+  NAV_MAX_Y,
   // Visual map dimensions (pixels)
-  VISUAL_WIDTH: 1024,
-  VISUAL_HEIGHT: 1024,
+  VISUAL_WIDTH,
+  VISUAL_HEIGHT,
 
   // Conversion functions
   navToVisual: (navX: number, navY: number): { x: number; y: number } => {
-    const navWidth = 1700 - (-2200); // 3900
-    const navHeight = 900 - (-3700); // 4600
+    const navWidth = NAV_MAX_X - NAV_MIN_X;
+    const navHeight = NAV_MAX_Y - NAV_MIN_Y;
 
-    const normalizedX = (navX - (-2200)) / navWidth;
-    const normalizedY = (navY - (-3700)) / navHeight;
+    const normalizedX = (navX - NAV_MIN_X) / navWidth;
+    const normalizedY = (navY - NAV_MIN_Y) / navHeight;
 
     return {
-      x: normalizedX * 1024,
-      y: normalizedY * 1024
+      x: normalizedX * VISUAL_WIDTH,
+      y: normalizedY * VISUAL_HEIGHT
     };
   },
 
   visualToNav: (visualX: number, visualY: number): { x: number; y: number } => {
-    const navWidth = 1700 - (-2200);
-    const navHeight = 900 - (-3700);
+    const navWidth = NAV_MAX_X - NAV_MIN_X;
+    const navHeight = NAV_MAX_Y - NAV_MIN_Y;
 
-    const normalizedX = visualX / 1024;
-    const normalizedY = visualY / 1024;
+    const normalizedX = visualX / VISUAL_WIDTH;
+    const normalizedY = visualY / VISUAL_HEIGHT;
 
     return {
-      x: normalizedX * navWidth + (-2200),
-      y: normalizedY * navHeight + (-3700)
+      x: normalizedX * navWidth + NAV_MIN_X,
+      y: normalizedY * navHeight + NAV_MIN_Y
     };
   }
 };

@@ -8,7 +8,7 @@ import { Weapon } from "@/types/Weapon";
 import { EventManager, GameEvent } from "./EventManager";
 import { DroppedWeapon, Point, ZoneState } from "./types";
 import { TacticalAI, AngleToClear } from "./TacticalAI";
-import { CS2_MOVEMENT_SPEEDS, TACTICAL_BEHAVIORS, TICK_DURATION } from "./cs2Constants";
+import { CS2_MOVEMENT_SPEEDS, TACTICAL_BEHAVIORS, TICK_DURATION, DUST2_COORDINATES } from "./cs2Constants";
 
 export type BotStatus = "ALIVE" | "DEAD";
 
@@ -269,7 +269,10 @@ export class Bot {
 
       if (this.roundRole === "Entry Fragger" && !this.isShiftWalking) speed *= 1.05;
 
-      return speed * this.sprintMultiplier;
+      // Scale speed from Game Units (inches) to Visual Units (pixels)
+      // Visual Width (1024) / Map Width (~3900) ~= 0.26
+      const scale = DUST2_COORDINATES.VISUAL_WIDTH / (DUST2_COORDINATES.NAV_MAX_X - DUST2_COORDINATES.NAV_MIN_X);
+      return speed * this.sprintMultiplier * scale;
   }
 
   makeNoise(): number {

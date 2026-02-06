@@ -3,6 +3,8 @@
  * Loads and manages the navigation mesh from de_dust2_web.json
  */
 import { Point } from "./types";
+import navMeshData from "@/data/de_dust2_web.json";
+import { DUST2_COORDINATES } from "./cs2Constants";
 
 export interface NavNode {
   id: string;
@@ -37,16 +39,7 @@ export class NavMeshManager {
    */
   async loadNavMesh(navData?: Record<string, { pos: [number, number]; adj: number[] }>): Promise<void> {
     try {
-      let data = navData;
-
-      if (!data) {
-        // Load from public folder if not provided
-        const response = await fetch('/de_dust2_web.json');
-        if (!response.ok) {
-          throw new Error('Failed to load navigation mesh');
-        }
-        data = await response.json();
-      }
+      const data = navData || (navMeshData as unknown as Record<string, { pos: [number, number]; adj: number[] }>);
 
       if (!data) throw new Error("No nav data found");
 
@@ -55,9 +48,12 @@ export class NavMeshManager {
 
       // Parse the navigation data
       for (const [id, nodeData] of Object.entries(data)) {
+        // Transform coordinates to Visual Space
+        const { x, y } = DUST2_COORDINATES.navToVisual(nodeData.pos[0], nodeData.pos[1]);
+
         const node: NavNode = {
           id,
-          pos: nodeData.pos,
+          pos: [x, y],
           adj: nodeData.adj
         };
 
