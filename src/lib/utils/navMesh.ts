@@ -11,8 +11,8 @@ export interface NavMesh {
 }
 
 // 1. Calculate Mesh Bounds from RAW Data
-// We cast to any to access the raw structure before transformation
-const rawData = navMeshData as Record<string, { pos: [number, number], adj: number[] }>;
+// We cast to unknown first to bypass TS inference overlap check
+const rawData = navMeshData as unknown as Record<string, { pos: number[], adj: number[] }>;
 const rawPositions = Object.values(rawData).map(n => n.pos);
 
 const minX = Math.min(...rawPositions.map(p => p[0]));
@@ -47,6 +47,7 @@ export const transformGameToSVG = (x: number, y: number): { x: number, y: number
 export const NAV_MESH: NavMesh = {};
 
 Object.entries(rawData).forEach(([key, val]) => {
+  // Ensure we treat the number[] as [number, number] for the transform
   const { x, y } = transformGameToSVG(val.pos[0], val.pos[1]);
   NAV_MESH[key] = {
     pos: [x, y],

@@ -47,6 +47,25 @@ export class Pathfinder {
     return minDistSq < thresholdSq;
   }
 
+  static hasLineOfSight(start: Point, end: Point): boolean {
+    const dist = this.heuristic([start.x, start.y], [end.x, end.y]);
+    const stepSize = 20; // Check every 20 units
+    const steps = Math.ceil(dist / stepSize);
+
+    const dx = (end.x - start.x) / steps;
+    const dy = (end.y - start.y) / steps;
+
+    // Sample points along the ray
+    for (let i = 1; i < steps; i++) {
+        const cx = start.x + dx * i;
+        const cy = start.y + dy * i;
+        if (!this.isWalkable(cx, cy)) {
+            return false;
+        }
+    }
+    return true;
+  }
+
   static findPath(start: Point, end: Point): Point[] {
     const startNodeInfo = this.getClosestNode(start);
     const endNodeInfo = this.getClosestNode(end);
