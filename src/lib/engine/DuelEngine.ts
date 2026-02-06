@@ -34,7 +34,7 @@ export class DuelEngine {
   private static readonly BASE_DIFFICULTY = 100;
   private static readonly BASE_TIME_TO_HIT = 500; // ms
   private static readonly TIME_PER_BULLET = 100; // ms (600 RPM)
-  private static readonly ENTRY_FRAG_TIME_REDUCTION = 120; // ms - Peeker tempo advantage
+  private static readonly ENTRY_FRAG_TIME_REDUCTION = 60; // ms - Peeker tempo advantage (Reduced from 120)
   private static readonly ENTRY_FRAG_ACCURACY_PENALTY = 0.85; // 15% reduction
 
   public static getDefuseTime(bot: Bot): number {
@@ -203,16 +203,21 @@ export class DuelEngine {
              if (context.peekType === "SWING") timeToHit -= 15;
         } else {
              if (context.defenderHolding && context.peekType !== "HOLD") {
-                 timeToHit -= 25;
-                 log.push("Holding Angle: -25ms");
+                 timeToHit -= 75; // Increased from 25ms
+                 log.push("Holding Angle: -75ms");
              }
         }
     }
 
-    // Entry Frag Tempo Advantage
+    // Entry Frag Tempo Advantage (Conditional on Information War)
     if (shooter.isEntryFragger) {
-      timeToHit -= this.ENTRY_FRAG_TIME_REDUCTION;
-      log.push(`Entry Fragging tempo bonus applied (-${this.ENTRY_FRAG_TIME_REDUCTION}ms).`);
+      const isExpected = context ? context.isExpected : false;
+      if (!isExpected) {
+        timeToHit -= this.ENTRY_FRAG_TIME_REDUCTION;
+        log.push(`Entry Fragging tempo bonus applied (-${this.ENTRY_FRAG_TIME_REDUCTION}ms).`);
+      } else {
+        log.push(`Entry Fragging bonus NULLIFIED (Defender expected attack).`);
+      }
     }
 
     timeToHit = Math.max(50, timeToHit);
