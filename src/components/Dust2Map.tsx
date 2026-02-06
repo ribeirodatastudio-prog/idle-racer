@@ -10,7 +10,7 @@ interface NodeData {
   adj: number[]; // The JSON has numbers in the adj array, even if keys are strings
 }
 
-const dust2Data = dust2DataRaw as Record<NodeId, NodeData>;
+const dust2Data = dust2DataRaw as unknown as Record<NodeId, NodeData>;
 
 interface Dust2MapProps {
   className?: string;
