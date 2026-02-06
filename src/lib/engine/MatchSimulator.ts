@@ -12,6 +12,7 @@ import { WeaponUtils } from "./WeaponUtils";
 import { Bomb, BombStatus } from "./Bomb";
 import { EventManager } from "./EventManager";
 import { Weapon } from "@/types/Weapon";
+import { EngagementContext, PeekType } from "./engagement";
 
 export interface PlayerStats {
   kills: number;
@@ -25,6 +26,7 @@ export interface PlayerStats {
 export interface ZoneState {
     noiseLevel: number;
     droppedWeapons: DroppedWeapon[];
+    smokedUntilTick?: number;
 }
 
 export interface SimulationState {
@@ -189,6 +191,7 @@ export class MatchSimulator {
     Object.keys(this.zoneStates).forEach(key => {
         this.zoneStates[key].noiseLevel = 0;
         this.zoneStates[key].droppedWeapons = [];
+        this.zoneStates[key].smokedUntilTick = 0;
     });
 
     // Respawn Bots
@@ -375,6 +378,9 @@ export class MatchSimulator {
         }
     }
 
+    // 5.5 Detect Enemies (Info War)
+    this.detectEnemies();
+
     // Force updates to Bomb State before Bots decide
     // Ensure Bomb Carrier logic handles bomb correctly
     if (this.bomb.status === BombStatus.IDLE && this.bomb.droppedLocation) {
@@ -424,9 +430,19 @@ export class MatchSimulator {
                if (utilType === "flashbang") {
                    this.bots.forEach(victim => {
                        if (victim.status === "ALIVE" && victim.side !== bot.side && victim.currentZoneId === targetZone) {
-                           victim.stunTimer = 20;
+                           const utilSkill = bot.player.skills.technical.utility;
+                           const composure = victim.player.skills.mental.composure;
+                           let stun = 20 + (utilSkill / 10) - (composure / 10);
+                           stun = Math.max(5, stun);
+                           victim.stunTimer = Math.floor(stun);
                        }
                    });
+               } else if (utilType === "smoke") {
+                   if (!this.zoneStates[targetZone]) {
+                       this.zoneStates[targetZone] = { noiseLevel: 0, droppedWeapons: [] };
+                   }
+                   this.zoneStates[targetZone].smokedUntilTick = this.tickCount + 180; // 18 seconds
+                   this.events.unshift(`> ☁️ Smoke popped in ${targetName}!`);
                } else if (utilType === "molotov" || utilType === "incendiary") {
                    const zone = this.map.getZone(targetZone);
                    if (zone) {
@@ -528,6 +544,7 @@ export class MatchSimulator {
            const moveAmount = effectiveSpeed * 0.1;
 
            bot.movementProgress += moveAmount;
+           console.log(`${bot.player.name} progress: ${bot.movementProgress}/${distance}`);
 
            if (bot.movementProgress >= distance) {
                // Arrived - Check Zone Capacity
@@ -686,6 +703,58 @@ export class MatchSimulator {
     this.checkWinConditions();
   }
 
+  private detectEnemies() {
+      const activeBots = this.bots.filter(b => b.status === "ALIVE");
+
+      activeBots.forEach(bot => {
+          // Check enemies
+          const enemies = activeBots.filter(e => e.side !== bot.side);
+
+          enemies.forEach(enemy => {
+              let isVisible = false;
+
+              // Case 1: Same Zone
+              if (enemy.currentZoneId === bot.currentZoneId) {
+                  isVisible = true;
+              } else {
+                  // Case 2: Connected Zone with Sightline
+                  const connections = this.map.getConnections(bot.currentZoneId);
+                  const conn = connections.find(c => c.to === enemy.currentZoneId);
+                  if (conn && conn.sightline) {
+                      // Check Smoke
+                      const currentSmoked = (this.zoneStates[bot.currentZoneId]?.smokedUntilTick || 0) > this.tickCount;
+                      const targetSmoked = (this.zoneStates[enemy.currentZoneId]?.smokedUntilTick || 0) > this.tickCount;
+
+                      if (!currentSmoked && !targetSmoked) {
+                          isVisible = true;
+                      }
+                  }
+              }
+
+              if (isVisible) {
+                  // Spot Chance Calculation
+                  const base = 0.20;
+                  const skill = (bot.player.skills.mental.gameSense + bot.player.skills.mental.positioning) / 400;
+                  const noiseLevel = this.zoneStates[enemy.currentZoneId]?.noiseLevel || 0;
+                  const noise = Math.min(1, Math.max(0, noiseLevel / 100));
+                  const stealth = enemy.isShiftWalking ? 0.15 : 0;
+
+                  const pSpot = Math.max(0, Math.min(1, base + 0.55 * skill + 0.25 * noise - stealth));
+
+                  if (Math.random() < pSpot) {
+                      this.eventManager.publish({
+                          type: "ENEMY_SPOTTED",
+                          zoneId: enemy.currentZoneId,
+                          timestamp: this.tickCount,
+                          enemyCount: 1,
+                          spottedBy: bot.id
+                      });
+                  }
+              }
+          });
+      });
+  }
+
   private resolveCombat() {
     // 1. Map bots to zones
     const zoneOccupants: Record<string, Bot[]> = {};
@@ -696,7 +765,7 @@ export class MatchSimulator {
     });
 
     // 2. Determine Intent (Target Selection)
-    const engagements: { attacker: Bot; target: Bot; distance: number; isCrossZone: boolean }[] = [];
+    const engagements: { attacker: Bot; target: Bot; distance: number; isCrossZone: boolean; context: EngagementContext }[] = [];
     const activeBots = this.bots.filter(b => b.status === "ALIVE");
 
     for (const bot of activeBots) {
@@ -760,11 +829,43 @@ export class MatchSimulator {
         potentialTargets.sort((a, b) => b.score - a.score);
         const chosen = potentialTargets[0];
 
+        // Build Context
+        const attackerZone = this.map.getZone(bot.currentZoneId);
+        const targetZone = this.map.getZone(chosen.bot.currentZoneId);
+
+        let peekType: PeekType = "HOLD";
+        if (bot.targetZoneId || bot.movementProgress > 0) {
+            // Moving
+            const aggression = bot.player.skills.mental.aggression;
+            if (aggression > 150) peekType = "WIDE";
+            else if (aggression < 100) peekType = "JIGGLE";
+            else peekType = "SWING";
+        } else if (bot.aiState === BotAIState.HOLDING_ANGLE) {
+            peekType = "HOLD";
+        }
+
+        // Smoked Check
+        const currentSmoked = (this.zoneStates[bot.currentZoneId]?.smokedUntilTick || 0) > this.tickCount;
+        const targetSmoked = (this.zoneStates[chosen.bot.currentZoneId]?.smokedUntilTick || 0) > this.tickCount;
+        const isSmoked = chosen.isCrossZone && (currentSmoked || targetSmoked);
+
+        if (isSmoked) continue; // Skip engagement
+
         engagements.push({
             attacker: bot,
             target: chosen.bot,
             distance: chosen.distance,
-            isCrossZone: chosen.isCrossZone
+            isCrossZone: chosen.isCrossZone,
+            context: {
+                isCrossZone: chosen.isCrossZone,
+                peekType: peekType,
+                defenderHolding: chosen.bot.aiState === BotAIState.HOLDING_ANGLE,
+                attackerCover: attackerZone?.cover || 0,
+                defenderCover: targetZone?.cover || 0,
+                flashedAttacker: Math.min(1, bot.stunTimer / 20),
+                flashedDefender: Math.min(1, chosen.bot.stunTimer / 20),
+                smoked: isSmoked
+            }
         });
     }
 
@@ -801,25 +902,17 @@ export class MatchSimulator {
 
          spentBots.add(eng.attacker.id);
 
-         const result = DuelEngine.calculateOutcome(eng.attacker, eng.target, eng.distance, eng.isCrossZone, targetCanFire);
+         const result = DuelEngine.calculateOutcome(eng.attacker, eng.target, eng.distance, eng.isCrossZone, targetCanFire, eng.context);
 
-         // Notify Enemy Spotted (Both ways)
-        this.eventManager.publish({
-            type: "ENEMY_SPOTTED",
-            zoneId: eng.target.currentZoneId,
-            timestamp: this.tickCount,
-            enemyCount: 1,
-            spottedBy: eng.attacker.id
-        });
-        if (targetCanFire) {
-             this.eventManager.publish({
-                type: "ENEMY_SPOTTED",
-                zoneId: eng.attacker.currentZoneId,
-                timestamp: this.tickCount,
-                enemyCount: 1,
-                spottedBy: eng.target.id
-            });
-        }
+         // Note: ENEMY_SPOTTED is now handled by detectEnemies().
+         // However, gunfire definitely reveals position instantly and reliably.
+         // We can keep a high-reliability spot here or rely on Noise + detectEnemies?
+         // User: "don't auto-spot after shots... spotting happens from vision + noise"
+         // But gunfire increases noise which increases spot chance.
+         // However, current detectEnemies runs BEFORE noise is added from combat this tick.
+         // So noise from THIS shot affects NEXT tick. That's fine.
+         // But "gunfire makes spotting easier" is in the requirement.
+         // I will REMOVE the auto-publish here as requested.
 
         // Interrupt logic
         if (this.bomb.planterId === eng.target.id) { this.bomb.abortPlanting(); eng.target.aiState = BotAIState.DEFAULT; }
@@ -975,6 +1068,62 @@ export class MatchSimulator {
            victimId: victim.id,
            killerId: killer.id
       });
+
+      // Trade Opportunity Check
+      const teammates = this.bots.filter(b => b.side === victim.side && b.id !== victim.id && b.status === "ALIVE");
+
+      for (const teammate of teammates) {
+          if (teammate.stunTimer > 0) continue;
+          if (teammate.combatCooldown > 0) continue;
+
+          let canTrade = false;
+          let distance = Infinity;
+          let isCrossZone = false;
+
+          if (teammate.currentZoneId === victim.currentZoneId) {
+              canTrade = true;
+              distance = 100;
+              isCrossZone = false;
+          } else {
+              const connections = this.map.getConnections(teammate.currentZoneId);
+              const conn = connections.find(c => c.to === killer.currentZoneId);
+              if (conn && conn.sightline) {
+                   if (teammate.focusZoneId === killer.currentZoneId) {
+                       canTrade = true;
+                       distance = this.map.getDistance(teammate.currentZoneId, killer.currentZoneId);
+                       isCrossZone = true;
+                   }
+              }
+          }
+
+          if (canTrade) {
+              const comms = teammate.player.skills.mental.communication;
+              const gameSense = teammate.player.skills.mental.gameSense;
+              const tradeDelayTicks = Math.round(Math.max(0, (120 - (comms + gameSense)/2) / 30));
+
+              if (tradeDelayTicks <= 1) {
+                   const traderZone = this.map.getZone(teammate.currentZoneId);
+                   const killerZone = this.map.getZone(killer.currentZoneId);
+
+                   const context: EngagementContext = {
+                       isCrossZone,
+                       peekType: "SWING",
+                       defenderHolding: false,
+                       attackerCover: traderZone?.cover || 0,
+                       defenderCover: killerZone?.cover || 0,
+                       flashedAttacker: 0,
+                       flashedDefender: 0,
+                       smoked: false
+                   };
+
+                   this.events.unshift(`[Trade] ⚔️ ${teammate.player.name} attempting trade on ${killer.player.name}!`);
+
+                   const result = DuelEngine.calculateOutcome(teammate, killer, distance, isCrossZone, true, context);
+                   this.applyDuelResult(result);
+                   break; // Only one trade per kill
+              }
+          }
+      }
 
       // Combat Delay
       const rxn = killer.player.skills.physical.reactionTime;

@@ -65,6 +65,8 @@ export class Bot {
   public sprintMultiplier: number = 1.0;
   public roundRole: string; // Dynamic role for the current round
 
+  public pendingEvents: { event: GameEvent; processAt: number }[] = [];
+
   private eventManager: EventManager;
 
   get hp(): number {
@@ -132,16 +134,49 @@ export class Bot {
               this.internalThreatMap[event.zoneId] = { level: 100, timestamp: event.timestamp };
           } else {
               // Teammate communication
-              const comms = this.player.skills.mental.communication;
-              // Chance to miss info? Or simply degraded info.
-              // Let's say high comms = instant accurate update. Low comms = delayed or lower threat level.
-              // For simplicity: Update threat map.
-              this.internalThreatMap[event.zoneId] = { level: 80, timestamp: event.timestamp };
+              const p = this.getCommsReliability();
+
+              // Probabilistic Update
+              if (Math.random() < p) {
+                   const delay = this.getCommsDelayTicks();
+                   this.pendingEvents.push({
+                       event: event,
+                       processAt: event.timestamp + delay
+                   });
+              }
+              // Else: Ignore (Simulates missed comms or confusion)
           }
       } else if (event.type === "TEAMMATE_DIED") {
           // Teammate died at zoneId. HIGH THREAT.
           this.internalThreatMap[event.zoneId] = { level: 100, timestamp: event.timestamp };
       }
+  }
+
+  getCommsReliability(): number {
+      const comms = this.player.skills.mental.communication;
+      // p = clamp01(0.15 + (communication / 200) * 0.8) → 0.15..0.95
+      return Math.max(0.15, Math.min(0.95, 0.15 + (comms / 200) * 0.8));
+  }
+
+  getCommsDelayTicks(): number {
+      const comms = this.player.skills.mental.communication;
+      // delay = round( max(0, (120 - communication) / 20) )
+      return Math.round(Math.max(0, (120 - comms) / 20));
+  }
+
+  private processPendingEvents(currentTick: number) {
+      const remaining: { event: GameEvent; processAt: number }[] = [];
+      this.pendingEvents.forEach(item => {
+          if (currentTick >= item.processAt) {
+              const event = item.event;
+              if (event.type === "ENEMY_SPOTTED") {
+                   this.internalThreatMap[event.zoneId] = { level: 80, timestamp: event.timestamp };
+              }
+          } else {
+              remaining.push(item);
+          }
+      });
+      this.pendingEvents = remaining;
   }
 
   getEquippedWeapon(): Weapon | undefined {
@@ -208,6 +243,8 @@ export class Bot {
 
   updateGoal(map: GameMap, bomb: Bomb, tacticsManager: TacticsManager, zoneStates: Record<string, { noiseLevel: number; droppedWeapons?: DroppedWeapon[] }>, currentTick: number = 0, allBots: Bot[] = []) {
     if (this.status === "DEAD") return;
+
+    this.processPendingEvents(currentTick);
 
     if (this.combatCooldown > 0) {
       this.combatCooldown--;
