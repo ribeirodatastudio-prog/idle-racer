@@ -65,6 +65,11 @@ export class Bomb {
       if (this.plantProgress >= this.TICKS_PLANT) {
           this.status = BombStatus.PLANTED;
           this.timer = this.TICKS_EXPLOSION;
+
+          // IMPORTANT: bomb is no longer carried or droppable
+          this.carrierId = undefined;
+          this.droppedLocation = undefined;
+
           return true; // Planted
       }
       return false; // Still planting

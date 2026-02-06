@@ -526,14 +526,13 @@ export class MatchSimulator {
         const distance = this.map.getDistance(bot.currentZoneId, bot.targetZoneId!);
 
         // Handle instant move (fallback) or granular move
-        if (distance === Infinity || distance <= 0) {
-           // Instant move logic
-           bot.currentZoneId = bot.targetZoneId!;
+        if (!Number.isFinite(distance) || distance <= 0) {
+           // Do NOT teleport. Cancel this move and force repath next tick.
+           this.events.unshift(`⚠️ Blocked move for ${bot.player.name}: Invalid distance ${distance}`);
            bot.targetZoneId = null;
            bot.movementProgress = 0;
-           if (bot.path.length > 0 && bot.path[0] === action.targetZoneId) {
-             bot.path.shift();
-           }
+           bot.path = [];
+           return;
         } else {
            // Calculate Speed
            const effectiveSpeed = bot.getEffectiveSpeed(40, this.roundTimer);
@@ -1159,7 +1158,10 @@ export class MatchSimulator {
       const delay = Math.max(2, Math.floor(6 - (rxn + dex) / 50));
       killer.combatCooldown = delay;
 
-      if (this.bomb.carrierId === victim.id) {
+      if (
+          (this.bomb.status === BombStatus.IDLE || this.bomb.status === BombStatus.PLANTING) &&
+          this.bomb.carrierId === victim.id
+      ) {
            victim.hasBomb = false;
            this.bomb.drop(victim.currentZoneId);
            this.events.unshift(`⚠️ Bomb dropped at ${this.map.getZone(victim.currentZoneId)?.name}!`);
