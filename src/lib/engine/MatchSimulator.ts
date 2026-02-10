@@ -561,7 +561,7 @@ export class MatchSimulator {
              else peekType = "JIGGLE";
         }
 
-        const isExpected = (chosen.bot.internalThreatMap[bot.currentZoneId]?.level || 0) > 0;
+        const isExpected = (chosen.bot.internalThreatMap.get(bot.currentZoneId)?.level || 0) > 0;
 
         engagements.push({
             attacker: bot,
