@@ -20,7 +20,7 @@ export interface ScheduledEvent {
   id: string;
   type: 'tournament_start' | 'tournament_end' | 'transfer_window_open' | 'transfer_window_close' | 'training' | 'match' | 'rest_day';
   date: GameDate;
-  data: any; // Event-specific data
+  data: Record<string, unknown>; // Event-specific data
 }
 
 /**
@@ -48,7 +48,8 @@ export class GameCalendar {
    * Advance the date by a number of weeks
    */
   static addWeeks(date: GameDate, weeks: number): GameDate {
-    let { year, week, day } = date;
+    let { year, week } = date;
+    const { day } = date;
     week += weeks;
 
     while (week > this.getWeeksInYear(year)) {

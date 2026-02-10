@@ -78,10 +78,6 @@ export class TournamentScheduler {
       offseasonWeeks: 4,
     };
 
-    // Get all templates, sorted by priority
-    const allTemplates = Array.from(this.templates.values())
-      .sort((a, b) => b.schedulingPriority - a.schedulingPriority);
-
     // Schedule tournaments
     const tournaments: Tournament[] = [];
     const scheduledWeeks = new Map<number, string[]>();

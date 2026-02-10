@@ -72,21 +72,21 @@ export class MatchSimulator {
    * Simulate a match between two teams (Instant Result)
    */
   public static simulate(
-    team1: any,
-    team2: any,
+    team1: { id: string },
+    team2: { id: string },
     options: { matchFormat: string; maps: string[] }
   ): {
     team1Score: number;
     team2Score: number;
     winnerId: string;
-    mapResults: any[]
+    mapResults: { map: string; winner: string; score: string }[]
   } {
     // Simple simulation logic based on random chance (placeholder)
     // In a real implementation, this would use team ratings/players
 
     let t1Score = 0;
     let t2Score = 0;
-    const mapResults = [];
+    const mapResults: { map: string; winner: string; score: string }[] = [];
 
     const targetWins = options.matchFormat === 'bo1' ? 1 :
                        options.matchFormat === 'bo2' ? 2 : // Note: BO2 usually means 2 maps played, draw possible
