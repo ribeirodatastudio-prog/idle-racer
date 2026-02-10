@@ -15,9 +15,23 @@ import { Player, MatchStats } from "@/types";
  * <0.80 = below average performance
  */
 
+interface SkillWeights {
+  [key: string]: number;
+}
+
+interface RoleWeightProfile {
+  technical: SkillWeights;
+  mental: SkillWeights;
+  physical: SkillWeights;
+}
+
+interface RoleWeightsMap {
+  [role: string]: RoleWeightProfile;
+}
+
 // Role-specific weight profiles
 // These determine which skills matter most for each role
-const ROLE_WEIGHTS = {
+const ROLE_WEIGHTS: RoleWeightsMap = {
   "Entry Fragger": {
     technical: {
       shooting: 1.3,
@@ -146,7 +160,7 @@ const ROLE_WEIGHTS = {
 };
 
 // Default weights if role not found
-const DEFAULT_WEIGHTS = {
+const DEFAULT_WEIGHTS: RoleWeightProfile = {
   technical: {
     shooting: 1.0,
     crosshairPlacement: 1.0,
@@ -177,7 +191,7 @@ const DEFAULT_WEIGHTS = {
  * This is similar to Football Manager's Current Ability
  */
 export function calculateOverallRating(player: Player): number {
-  const weights = (ROLE_WEIGHTS as any)[player.role] || DEFAULT_WEIGHTS;
+  const weights = ROLE_WEIGHTS[player.role] || DEFAULT_WEIGHTS;
 
   let totalWeightedScore = 0;
   let totalWeight = 0;
@@ -186,8 +200,9 @@ export function calculateOverallRating(player: Player): number {
   const technicalSkills = player.skills.technical;
   for (const [skill, value] of Object.entries(technicalSkills)) {
     if (skill === 'utility') continue; // Skip duplicate or legacy field if present
-    // We need to cast weights to any because of the dynamic key access
-    const weight = (weights.technical as any)[skill] || 1.0;
+
+    // Use type assertion carefully or index access safely
+    const weight = weights.technical[skill] || 1.0;
     totalWeightedScore += value * weight * 0.4;
     totalWeight += weight * 0.4;
   }
@@ -195,7 +210,7 @@ export function calculateOverallRating(player: Player): number {
   // Mental skills (40% of overall rating)
   const mentalSkills = player.skills.mental;
   for (const [skill, value] of Object.entries(mentalSkills)) {
-    const weight = (weights.mental as any)[skill] || 1.0;
+    const weight = weights.mental[skill] || 1.0;
     totalWeightedScore += value * weight * 0.4;
     totalWeight += weight * 0.4;
   }
@@ -203,7 +218,7 @@ export function calculateOverallRating(player: Player): number {
   // Physical skills (20% of overall rating)
   const physicalSkills = player.skills.physical;
   for (const [skill, value] of Object.entries(physicalSkills)) {
-    const weight = (weights.physical as any)[skill] || 1.0;
+    const weight = weights.physical[skill] || 1.0;
     totalWeightedScore += value * weight * 0.2;
     totalWeight += weight * 0.2;
   }

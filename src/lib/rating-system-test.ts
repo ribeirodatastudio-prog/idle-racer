@@ -8,7 +8,6 @@ import {
 } from "@/lib/rating-system";
 
 import {
-  calculateVRSRankings,
   getVRSTier,
   generateExampleVRSStandings
 } from "@/lib/vrs-team-ranking";
