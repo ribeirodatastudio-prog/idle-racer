@@ -2,8 +2,8 @@ import { MapData, Zone, Connection, Point } from "./types";
 import { navMeshManager } from "./NavMeshManager";
 
 // Defined by the standardized SVG/Canvas coordinate system (0-1000)
-const MAP_WIDTH = 1000;
-const MAP_HEIGHT = 1000;
+// const MAP_WIDTH = 1000;
+// const MAP_HEIGHT = 1000;
 
 export class GameMap {
   private zones: Map<string, Zone>;

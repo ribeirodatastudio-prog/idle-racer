@@ -1,7 +1,7 @@
 import { Bot } from "./Bot";
 import { BuyStrategy } from "./types";
 import { BuyLogic } from "./BuyLogic";
-import { ECONOMY, WEAPONS, TeamSide, WeaponType, EQUIPMENT_COSTS } from "./constants";
+import { ECONOMY, WEAPONS, TeamSide } from "./constants";
 import { WeaponUtils } from "./WeaponUtils";
 import { PlayerInventory } from "@/types";
 

@@ -28,8 +28,7 @@ export class TacticalAI {
   /**
    * Get angles that need to be cleared when entering a zone
    */
-  static getAnglesToClear( currentZoneId: string, targetZoneId: string, map: GameMap, side: TeamSide ): AngleToClear[] {
-    const angles: AngleToClear[] = [];
+  static getAnglesToClear( currentZoneId: string, targetZoneId: string, map: GameMap, _side: TeamSide ): AngleToClear[] {
     // Define common angles for key zones
     const angleDatabase = this.getAngleDatabase();
 

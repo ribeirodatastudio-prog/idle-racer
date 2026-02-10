@@ -1,4 +1,4 @@
-import { NAV_MESH, NavMeshNode } from "@/lib/utils/navMesh";
+import { NAV_MESH } from "@/lib/utils/navMesh";
 import { Point } from "./types";
 
 export class Pathfinder {
@@ -100,12 +100,15 @@ export class Pathfinder {
         let lowestF = Infinity;
 
         for (const id of openSet) {
+      // Iterate openSet to find lowest fScore
             const f = fScore.get(id) ?? Infinity;
             if (f < lowestF) {
-                lowestF = f;
-                currentId = id;
+        lowestF = f;
+        currentId = id;
             }
         }
+
+    if (currentId === -1) break;
 
         if (currentId === endId) {
             return this.reconstructPath(cameFrom, currentId, end);

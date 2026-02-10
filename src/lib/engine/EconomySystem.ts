@@ -1,6 +1,6 @@
-import { ECONOMY, TeamSide, Weapon, WEAPONS } from "./constants";
+import { ECONOMY, TeamSide, Weapon } from "./constants";
 import { Weapon as RuntimeWeapon } from "@/types/Weapon";
-import { MatchState, RoundEndReason } from "./types";
+import { RoundEndReason } from "./types";
 
 export class EconomySystem {
   /**

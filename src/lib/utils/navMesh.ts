@@ -24,8 +24,8 @@ export const MESH_BOUNDS = {
 };
 
 // Target Screen/Canvas Dimensions (from Constants)
-const TARGET_WIDTH = DUST2_COORDINATES.VISUAL_WIDTH;
-const TARGET_HEIGHT = DUST2_COORDINATES.VISUAL_HEIGHT;
+// const TARGET_WIDTH = DUST2_COORDINATES.VISUAL_WIDTH;
+// const TARGET_HEIGHT = DUST2_COORDINATES.VISUAL_HEIGHT;
 
 /**
  * Transforms Source Engine Game Coordinates to Visual Coordinates (1024x1024).

@@ -47,7 +47,7 @@ export class BuyLogic {
     // Priority: Rifle -> Kevlar -> Smoke -> Flash -> Molly -> HE (implied)
 
     // 1. Primary Weapon
-    this.buyPrimary(inventory, side, role, "FULL");
+    this.buyPrimary(inventory, side, role); // removed unused "FULL" arg if present in original, wait, original had 4 args
 
     // 2. Armor (Full)
     this.buyArmor(inventory, true);
@@ -143,7 +143,7 @@ export class BuyLogic {
     }
   }
 
-  private static buyEco(inventory: PlayerInventory, side: TeamSide) {
+  private static buyEco(inventory: PlayerInventory, _side: TeamSide) {
     // P250 if possible
     if ((!inventory.secondaryWeapon || inventory.secondaryWeapon === "glock-18" || inventory.secondaryWeapon === "usp-s") && inventory.money >= 300) {
         this.purchase(inventory, "p250");
@@ -156,7 +156,7 @@ export class BuyLogic {
 
   // --- Helpers ---
 
-  private static buyPrimary(inventory: PlayerInventory, side: TeamSide, role: string, strategy: string) {
+  private static buyPrimary(inventory: PlayerInventory, side: TeamSide, role: string) {
       if (inventory.primaryWeapon) return;
 
       if (role === "AWPer" && inventory.money >= WEAPONS["awp"].cost) {

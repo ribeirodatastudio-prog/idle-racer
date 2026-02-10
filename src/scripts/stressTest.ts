@@ -2,7 +2,7 @@
 import { MatchSimulator } from "../lib/engine/MatchSimulator";
 import { generateTeam } from "../lib/player-generator";
 import { TeamSide, Tactic } from "../lib/engine/TacticsManager";
-import { MatchPhase, RoundEndReason, BuyStrategy } from "../lib/engine/types";
+import { MatchPhase, BuyStrategy } from "../lib/engine/types";
 import * as fs from 'fs';
 
 // Constants

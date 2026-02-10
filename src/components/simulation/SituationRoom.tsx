@@ -64,6 +64,9 @@ export const SituationRoom: React.FC<SituationRoomProps> = ({ bots, matchState, 
       setCtAssignments({});
       setTBuyOverrides({});
       setCtBuyOverrides({});
+      // We want this to run once on mount, or when match/round resets?
+      // For now, empty dependency is correct for mount-only.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
   // Handle Tactic Change -> Reset Assignments for that side

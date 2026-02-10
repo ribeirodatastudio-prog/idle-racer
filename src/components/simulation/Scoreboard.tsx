@@ -2,7 +2,6 @@ import React from "react";
 import { MatchState, MatchPhase } from "@/lib/engine/types";
 import { Bomb, BombStatus } from "@/lib/engine/Bomb";
 import { Bot } from "@/lib/engine/Bot";
-import { ECONOMY } from "@/lib/engine/constants";
 
 interface ScoreboardProps {
   matchState: MatchState;

@@ -1,6 +1,6 @@
 import React from "react";
 import { Tactic, TeamSide } from "@/lib/engine/TacticsManager";
-import { Activity, ArrowRight, ArrowLeft, Play, ShieldAlert, Swords } from "lucide-react";
+import { Activity, ArrowLeft, Play, ShieldAlert, Swords } from "lucide-react";
 
 interface TacticsSelectionProps {
   tacticT: Tactic;
